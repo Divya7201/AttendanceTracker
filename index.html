@@ -334,6 +334,41 @@
             color: rgba(255, 255, 255, 0.9);
             margin: 0;
         }
+
+        .term-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .term-box {
+            background-color: #f9fafb;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+
+        .term-box-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #9ca3af;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .term-box-value {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: #3b82f6;
+            margin-bottom: 0.25rem;
+        }
+
+        .term-box-subtext {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
     </style>
 </head>
 <body>
@@ -414,6 +449,29 @@
                                 <div class="stat-box">
                                     <div class="stat-box-label">Missed</div>
                                     <div class="stat-box-value" id="missedDays">0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header" style="background-color: #f9fafb;">
+                            <div class="card-title" style="margin-bottom: 0;">
+                                <span>📅</span>
+                                <span>Term Stats</span>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="term-stats">
+                                <div class="term-box">
+                                    <div class="term-box-label">Term 1</div>
+                                    <div class="term-box-value" id="term1Attended">0</div>
+                                    <div class="term-box-subtext" id="term1Goal">/ 0 days</div>
+                                </div>
+                                <div class="term-box">
+                                    <div class="term-box-label">Term 2</div>
+                                    <div class="term-box-value" id="term2Attended">0</div>
+                                    <div class="term-box-subtext" id="term2Goal">/ 0 days</div>
                                 </div>
                             </div>
                         </div>
@@ -516,6 +574,69 @@
             ).length;
         }
 
+        function isInTerm1(date) {
+            const month = date.getMonth();
+            return month >= 6 && month <= 10; // July to November
+        }
+
+        function isInTerm2(date) {
+            const month = date.getMonth();
+            return month === 11 || month === 0 || month === 1 || month === 2 || month === 3 || month === 4 || month === 5; // December to June
+        }
+
+        function getWorkingDaysInTerm1(year) {
+            let workingDays = 0;
+            for (let month = 6; month <= 10; month++) {
+                const lastDate = new Date(year, month + 1, 0).getDate();
+                for (let day = 1; day <= lastDate; day++) {
+                    const date = new Date(year, month, day);
+                    if (!isWeekend(date) && !isHoliday(date)) {
+                        workingDays++;
+                    }
+                }
+            }
+            return workingDays;
+        }
+
+        function getWorkingDaysInTerm2(year) {
+            let workingDays = 0;
+            // December to June of next year
+            for (let month = 11; month <= 11; month++) {
+                const lastDate = new Date(year, month + 1, 0).getDate();
+                for (let day = 1; day <= lastDate; day++) {
+                    const date = new Date(year, month, day);
+                    if (!isWeekend(date) && !isHoliday(date)) {
+                        workingDays++;
+                    }
+                }
+            }
+            for (let month = 0; month <= 5; month++) {
+                const lastDate = new Date(year + 1, month + 1, 0).getDate();
+                for (let day = 1; day <= lastDate; day++) {
+                    const date = new Date(year + 1, month, day);
+                    if (!isWeekend(date) && !isHoliday(date)) {
+                        workingDays++;
+                    }
+                }
+            }
+            return workingDays;
+        }
+
+        function getAttendedInTerm1(year) {
+            return attendedDays.filter(d => {
+                return d.getFullYear() === year && isInTerm1(d);
+            }).length;
+        }
+
+        function getAttendedInTerm2(year) {
+            let count = 0;
+            // Count Dec of current year
+            count += attendedDays.filter(d => d.getFullYear() === year && d.getMonth() === 11).length;
+            // Count Jan-June of next year
+            count += attendedDays.filter(d => d.getFullYear() === year + 1 && d.getMonth() >= 0 && d.getMonth() <= 5).length;
+            return count;
+        }
+
         function renderCalendar() {
             const year = currentDate.getFullYear();
             const month = currentDate.getMonth();
@@ -592,6 +713,18 @@
             document.getElementById('missedDays').textContent = missed;
             document.getElementById('goalText').textContent = `Goal: ${working} days`;
             document.getElementById('progressFill').style.width = `${rate}%`;
+
+            // Update term stats
+            const year = currentDate.getFullYear();
+            const term1Attended = getAttendedInTerm1(year);
+            const term1Working = getWorkingDaysInTerm1(year);
+            const term2Attended = getAttendedInTerm2(year);
+            const term2Working = getWorkingDaysInTerm2(year);
+
+            document.getElementById('term1Attended').textContent = term1Attended;
+            document.getElementById('term1Goal').textContent = `/ ${term1Working} days`;
+            document.getElementById('term2Attended').textContent = term2Attended;
+            document.getElementById('term2Goal').textContent = `/ ${term2Working} days`;
         }
 
         document.getElementById('prevBtn').addEventListener('click', () => {
