@@ -366,8 +366,15 @@
         }
 
         .term-box-subtext {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+
+        .term-box-percentage {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #1f2937;
         }
     </style>
 </head>
@@ -467,11 +474,13 @@
                                     <div class="term-box-label">Term 1</div>
                                     <div class="term-box-value" id="term1Attended">0</div>
                                     <div class="term-box-subtext" id="term1Goal">/ 0 days</div>
+                                    <div class="term-box-percentage" id="term1Percentage">0%</div>
                                 </div>
                                 <div class="term-box">
                                     <div class="term-box-label">Term 2</div>
                                     <div class="term-box-value" id="term2Attended">0</div>
                                     <div class="term-box-subtext" id="term2Goal">/ 0 days</div>
+                                    <div class="term-box-percentage" id="term2Percentage">0%</div>
                                 </div>
                             </div>
                         </div>
@@ -495,8 +504,21 @@
         let currentDate = new Date();
         let attendedDays = [];
 
-        // Office holidays for 2026
+        // Office holidays for multiple years
         const holidays = [
+            // 2025
+            new Date(2025, 0, 1),    // 1 Jan
+            new Date(2025, 0, 15),   // 15 Jan
+            new Date(2025, 0, 26),   // 26 Jan
+            new Date(2025, 2, 19),   // 19 Mar
+            new Date(2025, 4, 1),    // 1 May
+            new Date(2025, 4, 28),   // 28 May
+            new Date(2025, 8, 14),   // 14 Sep
+            new Date(2025, 9, 2),    // 2 Oct
+            new Date(2025, 9, 21),   // 21 Oct
+            new Date(2025, 10, 9),   // 9 Nov
+            new Date(2025, 11, 25),  // 25 Dec
+            // 2026
             new Date(2026, 0, 1),    // 1 Jan
             new Date(2026, 0, 15),   // 15 Jan
             new Date(2026, 0, 26),   // 26 Jan
@@ -507,7 +529,19 @@
             new Date(2026, 9, 2),    // 2 Oct
             new Date(2026, 9, 21),   // 21 Oct
             new Date(2026, 10, 9),   // 9 Nov
-            new Date(2026, 11, 25)   // 25 Dec
+            new Date(2026, 11, 25),  // 25 Dec
+            // 2027
+            new Date(2027, 0, 1),    // 1 Jan
+            new Date(2027, 0, 15),   // 15 Jan
+            new Date(2027, 0, 26),   // 26 Jan
+            new Date(2027, 2, 19),   // 19 Mar
+            new Date(2027, 4, 1),    // 1 May
+            new Date(2027, 4, 28),   // 28 May
+            new Date(2027, 8, 14),   // 14 Sep
+            new Date(2027, 9, 2),    // 2 Oct
+            new Date(2027, 9, 21),   // 21 Oct
+            new Date(2027, 10, 9),   // 9 Nov
+            new Date(2027, 11, 25)   // 25 Dec
         ];
 
         function loadData() {
@@ -552,6 +586,22 @@
             );
         }
 
+        function getWorkingYearForDate(date) {
+            const month = date.getMonth();
+            const year = date.getFullYear();
+            
+            // Term 1: July - November (months 6-10)
+            // Term 2: December - June (months 11, 0-5)
+            
+            if (month >= 6) {
+                // July onwards - belongs to the working year starting in July
+                return year;
+            } else {
+                // January to June - belongs to working year that started previous July
+                return year - 1;
+            }
+        }
+
         function getWorkingDaysInMonth(date) {
             const year = date.getFullYear();
             const month = date.getMonth();
@@ -574,22 +624,13 @@
             ).length;
         }
 
-        function isInTerm1(date) {
-            const month = date.getMonth();
-            return month >= 6 && month <= 10; // July to November
-        }
-
-        function isInTerm2(date) {
-            const month = date.getMonth();
-            return month === 11 || month === 0 || month === 1 || month === 2 || month === 3 || month === 4 || month === 5; // December to June
-        }
-
-        function getWorkingDaysInTerm1(year) {
+        function getWorkingDaysInTerm1(workingYear) {
             let workingDays = 0;
+            // Term 1 is July-November of the working year
             for (let month = 6; month <= 10; month++) {
-                const lastDate = new Date(year, month + 1, 0).getDate();
+                const lastDate = new Date(workingYear, month + 1, 0).getDate();
                 for (let day = 1; day <= lastDate; day++) {
-                    const date = new Date(year, month, day);
+                    const date = new Date(workingYear, month, day);
                     if (!isWeekend(date) && !isHoliday(date)) {
                         workingDays++;
                     }
@@ -598,22 +639,24 @@
             return workingDays;
         }
 
-        function getWorkingDaysInTerm2(year) {
+        function getWorkingDaysInTerm2(workingYear) {
             let workingDays = 0;
-            // December to June of next year
-            for (let month = 11; month <= 11; month++) {
-                const lastDate = new Date(year, month + 1, 0).getDate();
-                for (let day = 1; day <= lastDate; day++) {
-                    const date = new Date(year, month, day);
-                    if (!isWeekend(date) && !isHoliday(date)) {
-                        workingDays++;
-                    }
+            // Term 2 is December of workingYear to June of workingYear+1
+            
+            // December of workingYear
+            const decLastDate = new Date(workingYear, 11 + 1, 0).getDate();
+            for (let day = 1; day <= decLastDate; day++) {
+                const date = new Date(workingYear, 11, day);
+                if (!isWeekend(date) && !isHoliday(date)) {
+                    workingDays++;
                 }
             }
+            
+            // January to June of workingYear+1
             for (let month = 0; month <= 5; month++) {
-                const lastDate = new Date(year + 1, month + 1, 0).getDate();
+                const lastDate = new Date(workingYear + 1, month + 1, 0).getDate();
                 for (let day = 1; day <= lastDate; day++) {
-                    const date = new Date(year + 1, month, day);
+                    const date = new Date(workingYear + 1, month, day);
                     if (!isWeekend(date) && !isHoliday(date)) {
                         workingDays++;
                     }
@@ -622,19 +665,18 @@
             return workingDays;
         }
 
-        function getAttendedInTerm1(year) {
+        function getAttendedInTerm1(workingYear) {
             return attendedDays.filter(d => {
-                return d.getFullYear() === year && isInTerm1(d);
+                return getWorkingYearForDate(d) === workingYear && d.getMonth() >= 6 && d.getMonth() <= 10;
             }).length;
         }
 
-        function getAttendedInTerm2(year) {
-            let count = 0;
-            // Count Dec of current year
-            count += attendedDays.filter(d => d.getFullYear() === year && d.getMonth() === 11).length;
-            // Count Jan-June of next year
-            count += attendedDays.filter(d => d.getFullYear() === year + 1 && d.getMonth() >= 0 && d.getMonth() <= 5).length;
-            return count;
+        function getAttendedInTerm2(workingYear) {
+            return attendedDays.filter(d => {
+                const dYear = getWorkingYearForDate(d);
+                if (dYear !== workingYear) return false;
+                return d.getMonth() === 11 || (d.getMonth() >= 0 && d.getMonth() <= 5);
+            }).length;
         }
 
         function renderCalendar() {
@@ -703,6 +745,7 @@
         }
 
         function updateStats() {
+            // Monthly stats
             const attended = getAttendedInMonth(currentDate);
             const working = getWorkingDaysInMonth(currentDate);
             const missed = Math.max(0, working - attended);
@@ -714,17 +757,23 @@
             document.getElementById('goalText').textContent = `Goal: ${working} days`;
             document.getElementById('progressFill').style.width = `${rate}%`;
 
-            // Update term stats
-            const year = currentDate.getFullYear();
-            const term1Attended = getAttendedInTerm1(year);
-            const term1Working = getWorkingDaysInTerm1(year);
-            const term2Attended = getAttendedInTerm2(year);
-            const term2Working = getWorkingDaysInTerm2(year);
+            // Term stats for current working year
+            const workingYear = getWorkingYearForDate(currentDate);
+            const term1Attended = getAttendedInTerm1(workingYear);
+            const term1Working = getWorkingDaysInTerm1(workingYear);
+            const term1Rate = term1Working > 0 ? Math.round((term1Attended / term1Working) * 100) : 0;
+            
+            const term2Attended = getAttendedInTerm2(workingYear);
+            const term2Working = getWorkingDaysInTerm2(workingYear);
+            const term2Rate = term2Working > 0 ? Math.round((term2Attended / term2Working) * 100) : 0;
 
             document.getElementById('term1Attended').textContent = term1Attended;
             document.getElementById('term1Goal').textContent = `/ ${term1Working} days`;
+            document.getElementById('term1Percentage').textContent = `${term1Rate}%`;
+            
             document.getElementById('term2Attended').textContent = term2Attended;
             document.getElementById('term2Goal').textContent = `/ ${term2Working} days`;
+            document.getElementById('term2Percentage').textContent = `${term2Rate}%`;
         }
 
         document.getElementById('prevBtn').addEventListener('click', () => {
